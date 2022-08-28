@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs')
 const User = require('../models/User')
 const JWT_SECRET = 'krishna';
 const jwt = require('jsonwebtoken')
+const fetchUser = require('../middleware/fetchUser')
 router.get('/createuser', [
    body('email').isEmail(),
    body('password').isLength({ min: 5 }),
@@ -40,4 +41,46 @@ router.get('/createuser', [
    res.json(user)
 })
 
+/*****************User Login**************/
+router.post('/login',  [
+   body('email').isEmail(),
+   body('password').isLength({ min: 5 }),
+], async (req, res) => {
+   // Finds the validation errors in this request and wraps them in an object with handy functions
+   const errors = validationResult(req);
+   if (!errors.isEmpty()) {
+     return res.status(400).json({ errors: errors.array() });
+   }
+   const user = await User.findOne({email: req.body.email})
+   if(!user) return res.status(400).json({error: 'Please provide correct credentials'});
+   const comparePassword = await bcrypt.compare(req.body.password, user.password);
+
+   if(!comparePassword)
+   {
+      return res.status(400).json({error: 'Please provide correct credentials'});
+   }
+   const data = {
+      user: {
+         id: user.id
+      }
+   }
+   const jwtString = jwt.sign(data, JWT_SECRET);
+   res.json({token: jwtString});
+})
+
+
+/*******Get User Details *******/
+router.post('/getuser', fetchUser, async (req, res)=> {
+   try
+   {
+      const user = await User.findById(req.user.id).select('-password');
+      res.send(user);
+   }
+   catch(error) 
+   {
+      res.status(500).json({error: 'internal server error'});
+   }
+   
+
+})
 module.exports = router;
