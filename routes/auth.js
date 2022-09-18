@@ -46,6 +46,7 @@ router.post('/login',  [
    body('email').isEmail(),
    body('password').isLength({ min: 5 }),
 ], async (req, res) => {
+   let success = false;
    // Finds the validation errors in this request and wraps them in an object with handy functions
    const errors = validationResult(req);
    if (!errors.isEmpty()) {
@@ -57,7 +58,7 @@ router.post('/login',  [
 
    if(!comparePassword)
    {
-      return res.status(400).json({error: 'Please provide correct credentials'});
+      return res.status(400).json({success, error: 'Please provide correct credentials'});
    }
    const data = {
       user: {
@@ -65,7 +66,8 @@ router.post('/login',  [
       }
    }
    const jwtString = jwt.sign(data, JWT_SECRET);
-   res.json({token: jwtString});
+   success = true;
+   res.json({success, token: jwtString});
 })
 
 
